@@ -11,6 +11,7 @@
 
 # functions
 function get_process_id() {
+  # shellcheck disable=SC2009
   temp_process_id=$(ps -ef | grep -w "${PROCESS_NAME}" | grep -v grep | awk '{print $2}')
   [[ "${temp_process_id}" != "" ]] && (
     # transform to array
@@ -22,7 +23,7 @@ function get_process_id() {
 function kill_normally() {
   get_process_id
   [[ "${temp_process_id}" != "" ]] && (
-    echo "kill normally, use [kill ${temp_process_id}] command"
+    echo "INFO: kill normally, use [kill ${temp_process_id}] command"
     kill "${temp_process_id}"
     # sleep at most 5 seconds for waiting result
     for ((i = 0; i < 5; i++)); do
@@ -35,7 +36,7 @@ function kill_normally() {
 function kill_hardly() {
   get_process_id
   [[ "$temp_process_id" != "" ]] && (
-    echo "kill hardly, use [kill -9 ${temp_process_id}] command"
+    echo "INFO: kill hardly, use [kill -9 ${temp_process_id}] command"
     kill -9 "${temp_process_id}"
   )
 }
@@ -97,7 +98,8 @@ for ((i = 0; i < 30; i++)); do
   sleep 2
   success_log_time=$(tail -n 20 log.out | grep 'Tomcat started on port' | awk '{print $2}')
   if [ "${success_log_time}" != "" ] && [ "${success_log_time}" != "${last_success_log_time}" ]; then
-    echo "Startup SUCCESS!! The New Process Info is as follows:"
+    echo "INFO: Startup SUCCESS!! The New Process Info is as follows:"
+    # shellcheck disable=SC2009
     ps -ef | grep -w "${PROCESS_NAME}" | grep -v grep
     is_startup_success="true"
     break

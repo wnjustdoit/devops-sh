@@ -1,6 +1,6 @@
 #!/bin/bash
-# sh [script].sh [project_home] [tomcat_dir_name] [process_name]
-# eg: ./restart.sh /data/project/mama_www_cms apache-tomcat-8.5.23 mama_www_cms
+# sh [script].sh [project_home] [process_name] [java_opts]
+# eg: ./restart_jar.sh /home/project/mama_config_server config-server "-Xms128m -Xmx768m"
 
 # functions
 # the prefix of map's key
@@ -57,8 +57,8 @@ function kill_normally() {
   if [ "${temp_process_id}" != "" ]; then
     echo "kill normally, use [kill ${temp_process_id}] command"
     kill "${temp_process_id}"
-    # sleep at most 10 seconds for waiting result(sometimes application does something at the end of its lifetime)
-    for ((i = 0; i < 10; i++)); do
+    # sleep at most 5 seconds for waiting result
+    for ((i = 0; i < 5; i++)); do
       get_process_id
       if [ "${temp_process_id}" == "" ]; then
         break
@@ -80,38 +80,22 @@ function kill_eventually() {
 }
 
 PROJECT_HOME=$1
-TOMCAT_DIR_NAME=$2
-PROCESS_NAME=$3
+JAVA_OPTS=$3
+PROCESS_NAME=$2
 
-cd "${PROJECT_HOME}/${TOMCAT_DIR_NAME}" || (
-  echo "ERROR: project home ${PROJECT_HOME} or tomcat dir name ${TOMCAT_DIR_NAME} not exists"
+cd "${PROJECT_HOME}" || (
+  echo "ERROR: project home ${PROJECT_HOME} not exists"
   exit
 )
-# if new file exists
-[ -e ROOT.war ] || (
-  echo "ERROR: new file ROOT.war is not exists"
-  exit
-)
+# TODO if new file exists
 # backup
-cp webapps/ROOT.war webapps/ROOT.war."$(date +%F)"
+file_full_name=$(ls -l *.jar | awk '{print $NF}')
+# TODO cp ${file_full_name} ${file_full_name}.$(date +%F)
 # shutdown
 get_process_id
 if [ "${temp_process_id}" != "" ]; then
-  # shutdown normally
-  shutdown_log=$(./bin/shutdown.sh 2>&1)
-  match_jmx_error_log=$(echo "${shutdown_log}" | grep 'bind failed: Address already in use ERROR')
-  # special handle
-  if [ "${match_jmx_error_log}" != "" ]; then
-    kill_hardly
-  else
-    get_process_id
-    if [ "${temp_process_id}" != "" ]; then
-      kill_eventually
-    else
-      echo "tomcat shutdown normally, the old processId is: ${temp_process_id}"
-    fi
-  fi
-  # finally confirm, actually check if command [kill -9 [processId]] takes effects
+  kill_eventually
+  # finally confirm
   get_process_id
   if [ "${temp_process_id}" != "" ]; then
     echo "ERROR: process ${PROCESS_NAME} with processId ${temp_process_id} shutdown failed, please check it manually"
@@ -120,19 +104,22 @@ if [ "${temp_process_id}" != "" ]; then
 fi
 # deploy
 # \ : not use alias
-\cp -f ROOT.war webapps/
-rm -rf webapps/ROOT
+# TODO \cp -f jenkins/*.jar .
 # startup
-last_success_log_time=$(tail -n 20 logs/catalina.out | grep 'Server startup in' | awk '{print $2}')
-tomcat_started_log=$(./bin/startup.sh 2>&1)
-([[ "${tomcat_started_log}" =~ "Tomcat started" ]] && echo "tomcat started, waiting for application startup...") || (
-  echo "ERROR: tomcat started failed"
+last_success_log_time=$(tail -n 20 log.out | grep 'Tomcat started on port' | awk '{print $2}')
+# shellcheck disable=SC2086
+nohup java ${JAVA_OPTS} -jar "${file_full_name}" 1>>log.out 2>errorlog.out &
+# sleep 1 second to wait background errorlog is generated
+sleep 1
+[ "$(cat errorlog.out)" != "" ] && (
+  echo "ERROR: Startup failed, error log: $(cat errorlog.out)"
   exit
 )
+echo "the background process is started, waiting for application startup..."
 is_startup_success="false"
 for ((i = 0; i < 30; i++)); do
   sleep 2
-  success_log_time=$(tail -n 20 logs/catalina.out | grep 'Server startup in' | awk '{print $2}')
+  success_log_time=$(tail -n 20 log.out | grep 'Tomcat started on port' | awk '{print $2}')
   if [ "${success_log_time}" != "" ] && [ "${success_log_time}" != "${last_success_log_time}" ]; then
     echo "Startup SUCCESS!! The New Process Info is as follows:"
     ps -ef | grep -w "${PROCESS_NAME}" | grep -v grep
@@ -147,4 +134,4 @@ if [ "${is_startup_success}" != "true" ]; then
 fi
 # show last 100 lines log
 echo "截止当前脚本执行结束时，应用的最后100行日志如下："
-tail -n100 logs/catalina.out
+tail -n100 log.out
