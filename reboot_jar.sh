@@ -1,10 +1,6 @@
 #!/bin/bash
 # usage: ./[script].sh [project_home] [process_name] [java_opts]
-# eg: ./restart_jar.sh /home/project/mama_config_server config-server "-Xms768m -Xmx768m"
-#
-# current running .jar file in directory: ${PROJECT_HOME}/
-# new .jar file in directory: ${PROJECT_HOME}/web/
-# backup directory: ${PROJECT_HOME}/backup/
+# ./reboot_jar.sh /home/project/mama_config_server config-server "-Xms768m -Xmx768m"
 
 source common.sh
 
@@ -15,8 +11,7 @@ PROCESS_NAME=$2
 
 # to project home
 cd "${PROJECT_HOME}" || if_failed "project home [${PROJECT_HOME}] not exists"
-# if new file exists or not
-cd "${PROJECT_HOME}/web" || if_failed "folder [${PROJECT_HOME}/web] not exists"
+# if deployed file exists or not
 file_full_name=$(find . -maxdepth 1 -name "*.jar" | awk '{print $NF}')
 (
   [[ "${file_full_name}" != "" ]] && (
@@ -26,18 +21,8 @@ file_full_name=$(find . -maxdepth 1 -name "*.jar" | awk '{print $NF}')
   )
 ) || if_failed "none file will be deployed"
 
-# backup
-output_std ">>> starting backup..."
-cd ../
-\cp -f "${file_full_name}" "backup/${file_full_name}.$(date +%F)"
-output_std ">>> backup ends"
-
 # kill the process
 kill_process
-
-# deploy
-output_std "move new .jar file to project home"
-\cp -f web/*.jar .
 
 # mark last success log time
 if [ -f log.out ]; then
