@@ -6,7 +6,8 @@
 # new .jar file in directory: ${PROJECT_HOME}/web/
 # backup directory: ${PROJECT_HOME}/backup/
 
-source common.sh
+# shellcheck disable=SC1090
+source "$(dirname "${BASH_SOURCE[0]}")"/common.sh
 
 # receive commandline parameters
 PROJECT_HOME=$1

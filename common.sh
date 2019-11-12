@@ -34,7 +34,7 @@ function show_process_info() {
 
 function kill_normally() {
   get_process_id
-  old_process_id=temp_process_id
+  old_process_id=$temp_process_id
   if [ "${temp_process_id}" != "" ]; then
     output_std "kill normally, use [kill ${temp_process_id}] command"
     kill "${temp_process_id}"
