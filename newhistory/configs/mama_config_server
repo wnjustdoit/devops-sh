@@ -1,3 +1,0 @@
-PROJECT_HOME=/home/project/mama_config_server
-PROCESS_NAME=config-server
-JAVA_OPTS="-Xms128m -Xmx768m"

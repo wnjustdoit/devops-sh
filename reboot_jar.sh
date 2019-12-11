@@ -1,14 +1,14 @@
 #!/bin/bash
-# usage: ./[script].sh [project_home] [process_name] [java_opts]
-# ./reboot_jar.sh /home/project/mama_config_server config-server "-Xms768m -Xmx768m"
+# usage: ./[script].sh [project_home] [process_name] [java_opts, optional]
+# eg: ./reboot_jar.sh /home/project/mama_config_server config-server "-Xms768m -Xmx768m"
 
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")"/common.sh
 
 # receive commandline parameters
 PROJECT_HOME=$1
-JAVA_OPTS=$3
 PROCESS_NAME=$2
+JAVA_OPTS=$3
 
 # to project home
 cd "${PROJECT_HOME}" || if_failed "project home [${PROJECT_HOME}] not exists"
