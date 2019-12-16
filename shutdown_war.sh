@@ -1,6 +1,6 @@
 #!/bin/bash
 # usage: ./[script].sh [project_home] [process_name] [tomcat_dir_name, optional]
-# eg: ./restart_war.sh /data/project/mama_www_cms mama_www_cms apache-tomcat-8.5.23
+# eg: ./shutdown_war.sh /data/project/mama_www_cms mama_www_cms apache-tomcat-8.5.23
 
 # shellcheck disable=SC1090
 source "$(dirname "${BASH_SOURCE[0]}")"/common.sh

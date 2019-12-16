@@ -20,12 +20,39 @@ function if_failed() {
 }
 
 function get_process_id() {
-  # shellcheck disable=SC2009
-  temp_process_id=$(ps -ef | grep -w "${PROCESS_NAME}" | grep -v "grep" | grep -v "$0" | awk '{print $2}')
+  [[ "${PROCESS_NAME}" != "" ]] && (
+    # it may be overwriten
+    temp_process_id=$(ps -ef | grep -w "${PROCESS_NAME}" | grep -v "grep" | grep -v "$0" | awk '{print $2}')
+    validate_process_id
+  )
+}
+function get_process_id_by_lsof() {
+  [[ "${PROCESS_PORT}" != "" ]] && (
+    # temp_process_id=$(lsof -i:"${PROCESS_PORT}" | awk '{print $2}' | tail -n 1)
+    temp_process_id=$(lsof -ti:"${PROCESS_PORT}")
+    validate_process_id
+  )
+}
+function get_process_id_by_netstat() {
+  [[ "${PROCESS_PORT}" != "" ]] && (
+    temp_process_id=$(netstat -nlp | grep :"${PROCESS_PORT}" | awk '{print $7}' | awk -F"/" '{ print $1 }')
+    validate_process_id
+  )
+}
+function validate_process_id() {
   [[ "${temp_process_id}" != "" ]] && (
     # shellcheck disable=SC2206
     temp_process_id_array=(${temp_process_id})
     ((${#temp_process_id_array[@]} > 1)) && if_failed "mulitiple processes, current temp_process_id is: ${temp_process_id}, please check it manually"
+  )
+}
+function get_process_id_eventually() {
+  get_process_id
+  [[ "${temp_process_id}" == "" ]] && (
+    get_process_id_by_lsof
+    [[ "${temp_process_id}" == "" ]] && (
+      get_process_id_by_netstat
+    )
   )
 }
 function show_process_info() {
