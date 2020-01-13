@@ -42,7 +42,7 @@ output_std "move new .jar file to project home"
 
 # mark last success log time
 if [ -f log.out ]; then
-  last_success_log_time=$(tail -n 20 log.out | grep 'Tomcat started on port' | awk '{print $2}')
+  last_success_log_time=$(tail -n 20 log.out | grep -E 'Tomcat started on port|initialization completed in' | awk '{print $2}')
 fi
 
 # startup
@@ -64,7 +64,7 @@ is_startup_success="false"
 for ((i = 0; i < 30; i++)); do
   sleep 2
   # same as above
-  success_log_time=$(tail -n 20 log.out | grep 'Tomcat started on port' | awk '{print $2}')
+  success_log_time=$(tail -n 20 log.out | grep -E 'Tomcat started on port|initialization completed in' | awk '{print $2}')
   if [ "${success_log_time}" != "" ] && [ "${success_log_time}" != "${last_success_log_time}" ]; then
     output_std "Startup SUCCESS!!"
     if_new_process
