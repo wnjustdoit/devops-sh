@@ -40,11 +40,6 @@ kill_process
 output_std "move new .jar file to project home"
 \cp -f web/*.jar .
 
-# mark last success log time
-if [ -f log.out ]; then
-  last_success_log_time=$(tail -n 20 log.out | grep -E 'Tomcat started on port|initialization completed in' | awk '{print $2}')
-fi
-
 # startup
 output_std ">>> starting java process..."
 # shellcheck disable=SC2086
@@ -59,23 +54,19 @@ for ((i = 0; i < 2; i++)); do
 done
 
 output_std "<<< the background process is started, waiting for application startup..."
-# check if the application log output is successful or not
-is_startup_success="false"
-for ((i = 0; i < 30; i++)); do
-  sleep 2
-  # same as above
-  success_log_time=$(tail -n 20 log.out | grep -E 'Tomcat started on port|initialization completed in' | awk '{print $2}')
-  if [ "${success_log_time}" != "" ] && [ "${success_log_time}" != "${last_success_log_time}" ]; then
+start_time=$(date +%s)
+tail -f log.out | while read -r line; do
+  echo "${line}"
+  # shellcheck disable=SC2126
+  num=$(echo "${line}" | grep -E 'Tomcat started on port|initialization completed in' | wc -l)
+  end_time=$(date +%s)
+  if [[ $num -ge 1 ]]; then
     output_std "Startup SUCCESS!!"
     if_new_process
-    is_startup_success="true"
+    break
+  # timeout of 100 seconds
+  elif [[ ${end_time}-${start_time} -ge 100 ]]; then
+    if_warn "Startup may be failed, please check it manually!"
     break
   fi
 done
-[[ "${is_startup_success}" != "true" ]] && (
-  if_warn "Startup may be failed, please check it manually!"
-)
-
-# show last 100 lines of logfile
-output_std "the last 100 lines of logfile are as follows:"
-tail -n100 log.out

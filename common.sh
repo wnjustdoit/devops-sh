@@ -16,7 +16,7 @@ function if_error() {
 function if_failed() {
   error_msg=$1
   [[ "${error_msg}" == "" ]] || echo -e "ERROR: ${error_msg}"
-  exit
+  exit 1
 }
 
 function get_process_id() {
